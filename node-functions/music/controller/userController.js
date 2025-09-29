@@ -1,4 +1,4 @@
-import { getDB } from '../config/supabase';
+import { getDB } from '../config/supabase.js';
 import config from '../config/app.js';
 import MusicService from '../service/musicService.js';
 import { syncSongListByQQ, syncSongListByNetease } from '../core/utils/string.js';

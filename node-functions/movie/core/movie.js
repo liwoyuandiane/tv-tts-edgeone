@@ -2,7 +2,7 @@
 // const require = createRequire(import.meta.url);
 // const jsonData = require('../config/movie.json');
 // 直接使用 import 导入 JSON 文件
-import jsonData from '../config/movie.json' assert { type: 'json' };
+import jsonData from '../config/movie.json' with { type: 'json' };
 
 import { cleanHtmlTags } from './utils/movie.js';
 

@@ -1,6 +1,7 @@
 {
     "name": "api-pro-express-edgeone",
     "version": "0.1.0",
+    "type": "module",
     "private": true,
     "dependencies": {
         "@aws-sdk/client-s3": "^3.894.0",

@@ -22,7 +22,7 @@
 
 import express from "express";
 import cors from 'cors';
-import { getDB } from "./supabase/db";
+import { getDB } from "./supabase/db.js";
 const app = express();
 
 // 允许所有来源的跨域请求
