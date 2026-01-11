@@ -82,6 +82,54 @@ export async function addKefuAccount(bundleId, kfAccount, kfNick) {
     }
 }
 
+//GET https://api.weixin.qq.com/customservice/kfsession/getsessionlist?access_token=ACCESS_TOKEN&kf_account=test1@test
+export async function getKfSessionList(bundleId,kfAccount) {
+    try {
+        const accessToken = await getAccessToken(bundleId);
+        const url = `https://api.weixin.qq.com/customservice/kfsession/getsessionlist?access_token=${accessToken}&kf_account=${kfAccount}`;
+        const response = await axios.get(url);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`获取客服会话列表错误 [${bundleId || 'default'}]:`, error);
+        throw error;
+    }
+}
+
+//GET https://api.weixin.qq.com/customservice/kfsession/getwaitcase?access_token=ACCESS_TOKEN
+export async function getWaitCase(bundleId) {
+    try {
+        const accessToken = await getAccessToken(bundleId);
+        const url = `https://api.weixin.qq.com/customservice/kfsession/getwaitcase?access_token=${accessToken}`;
+        const response = await axios.get(url);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`获取等待客服会话错误 [${bundleId || 'default'}]:`, error);
+        throw error;
+    }
+}
+
+
+//https://api.weixin.qq.com/customservice/kfsession/create?access_token=ACCESS_TOKEN
+export async function createKfSession(bundleId,openId,kfAccount) {
+    try {
+        const accessToken = await getAccessToken(bundleId);
+        const url = `https://api.weixin.qq.com/customservice/kfsession/create?access_token=${accessToken}`;
+        const payload = {
+            openid: openId,
+            kf_account: kfAccount
+        };
+        const response = await axios.post(url, payload);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`创建客服会话错误 [${bundleId || 'default'}]:`, error);
+        throw error;
+    }
+}
+
+
 export async function replyTextMessage(bundleId,openId,content, kfAccount = null) {
     try {
         const accessToken = await getAccessToken(bundleId);

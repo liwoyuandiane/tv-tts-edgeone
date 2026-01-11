@@ -24,3 +24,33 @@ export async function getFensiList(bundleId,openId = null) {
         throw error;
     }
 }
+
+//GET https://api.weixin.qq.com/cgi-bin/user/info?access_token=ACCESS_TOKEN&openid=o6_bmjrPTlm6_2sgVt7hMZOPfL2M&lang=zh_CN
+export async function getFensiInfo(bundleId,openId) {
+    try {
+        const accessToken = await getAccessToken(bundleId);
+        const url = `https://api.weixin.qq.com/cgi-bin/user/info?access_token=${accessToken}&openid=${openId}&lang=zh_CN`;
+        const response = await axios.get(url);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`获取粉丝信息错误 [${bundleId || 'default'}]:`, error);
+        throw error;
+    }
+}
+
+//批量获取粉丝信息
+export async function getFensiInfoList(bundleId,openIdList) {
+    try {
+        const accessToken = await getAccessToken(bundleId);
+        const url = `https://api.weixin.qq.com/cgi-bin/user/info/batchget?access_token=${accessToken}`;
+        const response = await axios.post(url, {
+            user_list: openIdList
+        });
+        return response.data;
+    }
+    catch (error) {
+        console.error(`批量获取粉丝信息错误 [${bundleId || 'default'}]:`, error);
+        throw error;
+    }
+}
