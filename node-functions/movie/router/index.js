@@ -35,6 +35,13 @@ router.get('/parse', movieController.parse.bind(movieController));
 
 router.get('/tvbox', movieController.tvbox.bind(movieController));
 
+/**
+ * 图片代理路由
+ * GET /movie/proxy?url=图片地址
+ * 用于绕过豆瓣等网站的图片防盗链
+ */
+router.get('/proxy', movieController.proxy.bind(movieController));
+
 
 export default {
   router

@@ -31,6 +31,7 @@ export async function getFensiInfo(bundleId,openId) {
         const accessToken = await getAccessToken(bundleId);
         const url = `https://api.weixin.qq.com/cgi-bin/user/info?access_token=${accessToken}&openid=${openId}&lang=zh_CN`;
         const response = await axios.get(url);
+        // console.log(response)
         return response.data;
     }
     catch (error) {

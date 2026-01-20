@@ -1,5 +1,6 @@
 import express from 'express';
-import { getFensiList } from '../api/fensi.js';
+import { getFensiList, getFensiInfo } from '../api/fensi.js';
+import { createKfSession, getKfSessionList, inviteWx, replyTextMessage } from '../api/kefu.js'
 const router = express.Router();
 
 router.get('/:bundleId/fensi/list', async (req, res) => {
@@ -14,10 +15,20 @@ router.get('/:bundleId/fensi/list', async (req, res) => {
             });
         }
         const data = await getFensiList(bundleId, openId);
+        let arr = []
+       
+        for (let index = 0; index < data.data.openid.length; index++) {
+            const userId = data.data.openid[index];
+            
+            let info = await getFensiInfo(bundleId, userId)
+            
+            arr.push(info)
+            
+        }
         res.json({ 
             code: 0, 
             msg: "success", 
-            data: data 
+            data: arr 
         });
     } catch (error) {
         res.status(500).json({ 

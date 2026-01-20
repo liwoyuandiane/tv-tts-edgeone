@@ -11,12 +11,16 @@ import adminRouter from './admin.js';
 import fensiRouter from './fensi.js';
 import xiaochengxuRouter from './xiaochengxu.js';
 import { getAllAccounts } from '../config/index.js';
+import wxloginRouter from './wx_login.js'
+import telRouter from './tel.js'
 
 /**
  * 注册所有路由到 app
  * @param {object} app - Express app 实例
  */
 export function registerRoutes(app) {
+    // tel
+    app.use('/', telRouter);
     // 接收消息路由
     app.use('/', receiveRouter);
     
@@ -34,6 +38,10 @@ export function registerRoutes(app) {
     app.use('/', fensiRouter);
 
     app.use('/', xiaochengxuRouter);
+
+    app.use('/', wxloginRouter);
+
+    
 
 
     

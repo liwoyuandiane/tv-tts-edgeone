@@ -16,7 +16,10 @@ const DEFAULT_CONFIG = {
     appSecret: process.env.WECHAT_APPSECRET || '',
     token: process.env.WECHAT_TOKEN || '',
     encodingAESKey: process.env.WECHAT_ENCODING_AES_KEY || '',
-    tokenExpireTime: 7200000 // 2小时，单位毫秒
+    tokenExpireTime: 7200000, // 2小时，单位毫秒
+    redirectUri: process.env.WECHAT_REDIRECT_URI || '',
+    scope: process.env.WECHAT_SCOPE || 'snsapi_login',
+    state: process.env.WECHAT_STATE || 'wechat_auth_state'
 };
 
 /**

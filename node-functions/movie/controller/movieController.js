@@ -60,10 +60,14 @@ class MovieController {
 
             // 获取缓存时间并设置响应头
             const cacheTime = await getCacheTime();
-
-            return res.json(result, {
-                headers: this._getCacheHeaders(cacheTime)
+            const cacheHeaders = this._getCacheHeaders(cacheTime);
+            
+            // 设置响应头
+            Object.entries(cacheHeaders).forEach(([key, value]) => {
+                res.setHeader(key, value);
             });
+
+            return res.json(result);
 
         } catch (error) {
             console.error('获取豆瓣电影列表失败:', error);
@@ -95,12 +99,14 @@ class MovieController {
         // 如果没有查询参数，返回空结果
         if (!query) {
             const cacheTime = await getCacheTime();
-            return res.json(
-                { results: [] },
-                {
-                    headers: this._getCacheHeaders(cacheTime),
-                }
-            );
+            const cacheHeaders = this._getCacheHeaders(cacheTime);
+            
+            // 设置响应头
+            Object.entries(cacheHeaders).forEach(([key, value]) => {
+                res.setHeader(key, value);
+            });
+            
+            return res.json({ results: [] });
         }
 
         try {
@@ -111,13 +117,14 @@ class MovieController {
             const results = await Promise.all(searchPromises);
             const flattenedResults = results.flat();
             const cacheTime = await getCacheTime();
+            const cacheHeaders = this._getCacheHeaders(cacheTime);
+            
+            // 设置响应头
+            Object.entries(cacheHeaders).forEach(([key, value]) => {
+                res.setHeader(key, value);
+            });
 
-            return res.json(
-                { results: flattenedResults },
-                {
-                    headers: this._getCacheHeaders(cacheTime),
-                }
-            );
+            return res.json({ results: flattenedResults });
         } catch (error) {
             console.error('电影搜索失败:', error);
             return res.status(500).json({ error: '搜索失败' });
@@ -153,10 +160,14 @@ class MovieController {
             // 获取详情数据
             const result = await getDetailFromApi(apiSite, id);
             const cacheTime = await getCacheTime();
-
-            return res.json(result, {
-                headers: this._getCacheHeaders(cacheTime),
+            const cacheHeaders = this._getCacheHeaders(cacheTime);
+            
+            // 设置响应头
+            Object.entries(cacheHeaders).forEach(([key, value]) => {
+                res.setHeader(key, value);
             });
+
+            return res.json(result);
         } catch (error) {
             console.error('获取电影详情失败:', error);
             return res.status(500).json({ error: error.message || '获取详情失败' });
@@ -434,6 +445,133 @@ class MovieController {
             return
         }
 
+    }
+
+    /**
+     * 图片代理接口 - 用于绕过豆瓣等网站的防盗链
+     * @param {Object} req - Express 请求对象
+     * @param {Object} res - Express 响应对象
+     */
+    async proxy(req, res) {
+        try {
+            const { url } = req.query;
+
+            console.log(url);
+
+            // 发起请求获取图片
+            const response = await fetch(url, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Referer': 'https://movie.douban.com/',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                },
+                timeout: 10000 // 10秒超时
+            });
+
+            console.log(response)
+
+            if (!response.ok) {
+                return res.status(response.status).json({ 
+                    error: '获取图片失败',
+                    status: response.status 
+                });
+            }
+
+            // 获取图片数据
+            const imageBuffer = await response.arrayBuffer();
+            const contentType = response.headers.get('content-type') || 'image/jpeg';
+
+            // 设置响应头
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400'); // 缓存1天
+            res.setHeader('CDN-Cache-Control', 'public, s-maxage=86400');
+            res.setHeader('Vercel-CDN-Cache-Control', 'public, s-maxage=86400');
+            
+            // 允许跨域
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+            // 返回图片数据
+            return res.send(Buffer.from(imageBuffer));
+
+        } catch (error) {
+            console.error('图片代理失败:', error);
+            
+            // 根据错误类型返回不同的状态码
+            if (error.name === 'AbortError' || error.code === 'ETIMEDOUT') {
+                return res.status(504).json({ error: '请求超时' });
+            } else if (error.code === 'ENOTFOUND') {
+                return res.status(404).json({ error: '目标地址不存在' });
+            } else {
+                return res.status(500).json({ 
+                    error: '代理失败',
+                    message: error.message 
+                });
+            }
+        }
+    }
+
+    async img(req, res){
+        const { url } = req.query;
+        // const { searchParams } = new URL(request.url);
+        // const imageUrl = searchParams.get('url');
+        let imageUrl = url;
+
+        if (!imageUrl) {
+            return NextResponse.json({ error: 'Missing image URL' }, { status: 400 });
+        }
+
+        try {
+            const imageResponse = await fetch(imageUrl, {
+                headers: {
+                    'User-Agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                    Accept: 'image/jpeg,image/png,image/gif,*/*;q=0.8',
+                    Referer: 'https://movie.douban.com/',
+                },
+            });
+
+            if (!imageResponse.ok) {
+                return NextResponse.json(
+                    { error: imageResponse.statusText },
+                    { status: imageResponse.status }
+                );
+            }
+
+            const contentType = imageResponse.headers.get('content-type');
+
+            if (!imageResponse.body) {
+                return NextResponse.json(
+                    { error: 'Image response has no body' },
+                    { status: 500 }
+                );
+            }
+
+            // 创建响应头
+            const headers = new Headers();
+            if (contentType) {
+                headers.set('Content-Type', contentType);
+            }
+
+            // 设置缓存头（可选）
+            headers.set('Cache-Control', 'public, max-age=15720000, s-maxage=15720000'); // 缓存半年
+            headers.set('CDN-Cache-Control', 'public, s-maxage=15720000');
+            headers.set('Vercel-CDN-Cache-Control', 'public, s-maxage=15720000');
+            headers.set('Netlify-Vary', 'query');
+
+            // 直接返回图片流
+            return new Response(imageResponse.body, {
+                status: 200,
+                headers,
+            });
+        } catch (error) {
+            return NextResponse.json(
+                { error: 'Error fetching image' },
+                { status: 500 }
+            );
+        }
     }
 }
 

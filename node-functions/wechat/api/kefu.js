@@ -82,6 +82,32 @@ export async function addKefuAccount(bundleId, kfAccount, kfNick) {
     }
 }
 
+//https://api.weixin.qq.com/customservice/kfaccount/inviteworker?access_token=ACCESS_TOKEN
+export async function inviteWx(bundleId,kfAccount,wx) {
+    try {
+        const accessToken = await getAccessToken(bundleId);
+        const url = `https://api.weixin.qq.com/customservice/kfaccount/inviteworker?access_token=${accessToken}`;
+
+        const payload = {
+            kf_account: kfAccount,
+            invite_wx: wx
+        };
+
+        const response = await axios.post(url, payload);
+
+        if (response.data.errcode === 0) {
+            return response.data;
+        } else {
+            console.error('邀请客服账号失败:', response.data);
+            throw new Error(`邀请客服账号失败: ${response.data.errmsg || '未知错误'}`);
+        }
+    } catch (error) {
+        console.error(`邀请客服账号错误 [${bundleId || 'default'}]:`, error);
+        throw error;
+    }
+}
+
+
 //GET https://api.weixin.qq.com/customservice/kfsession/getsessionlist?access_token=ACCESS_TOKEN&kf_account=test1@test
 export async function getKfSessionList(bundleId,kfAccount) {
     try {
@@ -121,6 +147,11 @@ export async function createKfSession(bundleId,openId,kfAccount) {
             kf_account: kfAccount
         };
         const response = await axios.post(url, payload);
+        if (response.data.errcode !== 0) {
+            throw new Error(`创建客服会话失败: ${response.data.errmsg || '未知错误'}`);
+        }
+
+        console.log(`创建客服会话响应 [${bundleId || 'default'}]:`, response.data);
         return response.data;
     }
     catch (error) {

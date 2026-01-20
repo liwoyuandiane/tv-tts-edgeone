@@ -766,11 +766,12 @@
 
         // 渲染电影卡片
         function renderMovieCard(movie) {
+            let url = encodeURI(movie.poster)
             return `
                 <div class="movie-card" data-id="${movie.id || ''}" data-source="${movie.source || ''}">
                     <div class="movie-poster">
                         ${movie.poster ? 
-                            `<img src="https://images.weserv.nl/?url=${movie.poster}" alt="${movie.title}" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>海报加载失败</span>'">` :
+                            `<img src="https://tv.dogegg.online/api/image-proxy?url=${url}" alt="${movie.title}" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>海报加载失败</span>'">` :
                             '<span>暂无海报</span>'
                         }
                     </div>
@@ -1132,11 +1133,13 @@
                 ratingDisplay = `${rating}${count > 0 ? ` (${count > 10000 ? Math.floor(count/1000) + 'k' : count})` : ''}`;
             }
 
+            let imgurl = 'https://tv.dogegg.online/api/image-proxy?url='+ encodeURI(movie.poster);
+
             return `
                 <div class="movie-card" data-id="${movie.id}" data-source="${movie.source}" data-douban-id="${movie.douban_id}">
                     <div class="movie-poster">
                         ${movie.poster ? 
-                            `<img src="${movie.poster}" loading="lazy" referrerpolicy="no-referrer" alt="${movie.title}" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>海报加载失败</span>'">${movie.is_new ? '<div class="new-badge">新</div>' : ''}` :
+                            `<img src="${imgurl}" loading="lazy" referrerpolicy="no-referrer" alt="${movie.title}" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>海报加载失败</span>'">${movie.is_new ? '<div class="new-badge">新</div>' : ''}` :
                             '<span>暂无海报</span>'
                         }
                     </div>

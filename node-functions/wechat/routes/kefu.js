@@ -4,6 +4,7 @@
 
 import express from 'express';
 import { getKefuList, getKefuOnline, addKefuAccount } from '../api/kefu.js';
+import { createKfSession, getKfSessionList, inviteWx, replyTextMessage } from '../api/kefu.js'
 
 const router = express.Router();
 
@@ -143,6 +144,90 @@ router.post('/kefu/add', async (req, res) => {
             msg: error.message 
         });
     }
+});
+
+
+
+router.get('/:bundleId/inviteWx', async (req, res) => {
+    const bundleId = req.params.bundleId;
+    const wx = req.query.wx;
+    const kfAccount = req.query.kfAccount;
+
+    if (!bundleId || !wx) {
+        return res.status(400).json({
+            code: 400,
+            msg: "缺少必要参数: bundleId 或 wx"
+        });
+    }
+    let re = await inviteWx(bundleId, kfAccount, wx)
+    res.json({
+        code: 0,
+        msg: "success",
+        data: re
+    });
+
+});
+
+router.get('/:bundleId/huihua/add', async (req, res) => {
+    const bundleId = req.params.bundleId;
+    const kfAccount = req.query.kfAccount;
+    const openId = req.query.openId;
+    console.log("openId", openId);
+    if (!bundleId || !openId) {
+        return res.status(400).json({
+            code: 400,
+            msg: "缺少必要参数: bundleId 或 openId"
+        });
+    }
+    let re = await createKfSession(bundleId, openId, kfAccount)
+    res.json({
+        code: 0,
+        msg: "success",
+        data: re
+    });
+
+});
+
+
+
+router.get('/:bundleId/huihua/list', async (req, res) => {
+    const bundleId = req.params.bundleId;
+    const kfAccount = req.query.kfAccount;
+
+    if (!bundleId || !kfAccount) {
+        return res.status(400).json({
+            code: 400,
+            msg: "缺少必要参数: bundleId 或 openId"
+        });
+    }
+    let re = await getKfSessionList(bundleId, kfAccount)
+    res.json({
+        code: 0,
+        msg: "success",
+        data: re
+    });
+
+});
+
+router.get('/:bundleId/huihua/send', async (req, res) => {
+    const bundleId = req.params.bundleId;
+    const kfAccount = req.query.kfAccount;
+    const openId = req.query.openId;
+    const content = req.query.content;
+    console.log("openId", openId);
+    if (!bundleId || !openId) {
+        return res.status(400).json({
+            code: 400,
+            msg: "缺少必要参数: bundleId 或 openId"
+        });
+    }
+    let re = await replyTextMessage(bundleId, openId, content, kfAccount)
+    res.json({
+        code: 0,
+        msg: "success",
+        data: re
+    });
+
 });
 
 export default router;
