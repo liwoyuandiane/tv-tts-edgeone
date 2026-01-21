@@ -1,3 +1,5 @@
+
+import axios from 'axios';
 import { getCacheTime, getAvailableApiSites, searchFromApi, getDetailFromApi, getConfig } from '../core/movie.js';
 import { getRecentHotMovies } from '../core/douban.js';
 import { detectPlatform,getCompatibleParsers,PARSE_APIS } from '../core/utils/parse.js';
@@ -513,67 +515,113 @@ class MovieController {
         }
     }
 
-    async img(req, res){
-        const { url } = req.query;
-        // const { searchParams } = new URL(request.url);
-        // const imageUrl = searchParams.get('url');
-        let imageUrl = url;
+
+    async imgproxy(req, res)  {
+        const imageUrl = req.query.url;
 
         if (!imageUrl) {
-            return NextResponse.json({ error: 'Missing image URL' }, { status: 400 });
+            return res.status(400).json({ error: 'Missing image URL' });
         }
 
         try {
-            const imageResponse = await fetch(imageUrl, {
+            const imageResponse = await axios({
+                method: 'GET',
+                url: imageUrl,
+                responseType: 'stream',
                 headers: {
                     'User-Agent':
                         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
                     Accept: 'image/jpeg,image/png,image/gif,*/*;q=0.8',
                     Referer: 'https://movie.douban.com/',
                 },
+                timeout: 10000,
+                maxRedirects: 5, // 最大重定向次数
+                validateStatus: (status) => {
+                    // 接受所有状态码，不自动抛出错误
+                    return true;
+                },
             });
 
-            if (!imageResponse.ok) {
-                return NextResponse.json(
-                    { error: imageResponse.statusText },
-                    { status: imageResponse.status }
-                );
+            // 处理非 200 状态码
+            if (imageResponse.status !== 200) {
+                return res.status(imageResponse.status).json({
+                    error: `Image server returned ${imageResponse.status}`,
+                    status: imageResponse.status,
+                    statusText: imageResponse.statusText,
+                });
             }
 
-            const contentType = imageResponse.headers.get('content-type');
+            const contentType = imageResponse.headers['content-type'];
+            const contentLength = imageResponse.headers['content-length'];
 
-            if (!imageResponse.body) {
-                return NextResponse.json(
-                    { error: 'Image response has no body' },
-                    { status: 500 }
-                );
+            // 验证是否为图片类型
+            if (contentType && !contentType.startsWith('image/')) {
+                return res.status(415).json({
+                    error: 'URL does not point to an image',
+                    contentType,
+                });
             }
 
-            // 创建响应头
-            const headers = new Headers();
+            // 设置响应头
+            const headers = {
+                'Cache-Control': 'public, max-age=15720000, s-maxage=15720000',
+                'CDN-Cache-Control': 'public, s-maxage=15720000',
+            };
+
             if (contentType) {
-                headers.set('Content-Type', contentType);
+                headers['Content-Type'] = contentType;
             }
 
-            // 设置缓存头（可选）
-            headers.set('Cache-Control', 'public, max-age=15720000, s-maxage=15720000'); // 缓存半年
-            headers.set('CDN-Cache-Control', 'public, s-maxage=15720000');
-            headers.set('Vercel-CDN-Cache-Control', 'public, s-maxage=15720000');
-            headers.set('Netlify-Vary', 'query');
+            if (contentLength) {
+                headers['Content-Length'] = contentLength;
+            }
 
-            // 直接返回图片流
-            return new Response(imageResponse.body, {
-                status: 200,
-                headers,
+            res.set(headers);
+
+            // 流式传输
+            imageResponse.data.pipe(res);
+
+            // 错误处理
+            imageResponse.data.on('error', (error) => {
+                console.error('Stream error:', error);
+                if (!res.headersSent) {
+                    res.status(500).json({ error: 'Error streaming image' });
+                }
             });
+
+            // 完成处理
+            imageResponse.data.on('end', () => {
+                // 流传输完成
+            });
+
         } catch (error) {
-            return NextResponse.json(
-                { error: 'Error fetching image' },
-                { status: 500 }
-            );
+            console.error('Axios error:', error.message);
+
+            // 处理不同的错误情况
+            if (error.code === 'ENOTFOUND') {
+                return res.status(404).json({
+                    error: 'Image host not found'
+                });
+            } else if (error.code === 'ECONNREFUSED') {
+                return res.status(503).json({
+                    error: 'Image server connection refused'
+                });
+            } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+                return res.status(504).json({
+                    error: 'Image request timeout'
+                });
+            } else {
+                return res.status(500).json({
+                    error: 'Internal server error while fetching image'
+                });
+            }
         }
-    }
+    };
+
+
+    
 }
+
 
 export default MovieController;
 

@@ -69,13 +69,13 @@ async function handleNotify(req, res) {
                 }
                 result = await sendTextMessage(bundleId, openId, content, kfAccount);
             } else if (type === 'template') {
-                if (!templateId || !data) {
+                if (!templateId || !content) {
                     return res.status(400).json({ 
                         code: 400, 
                         msg: "模板消息需要提供 templateId 和 data 参数" 
                     });
                 }
-                result = await sendTemplateMessage(bundleId, openId, templateId, data, url);
+                result = await sendTemplateMessage(bundleId, openId, templateId, content, url);
             } else {
                 return res.status(400).json({ 
                     code: 400, 

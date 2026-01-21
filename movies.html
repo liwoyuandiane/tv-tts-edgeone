@@ -468,10 +468,10 @@
             <a href="#" class="logo">KatelyaTV</a>
 
             <div class="nav-links">
-                <a href="movie.html">🏠 首页</a>
-                <a href="movie.html#movie" class="active">🎬 电影</a>
-                <a href="movie.html#tv">📺 剧集</a>
-                <a href="movie.html#show">📖 综艺</a>
+                <a href="movies.html">🏠 首页</a>
+                <a href="movies.html#movie" class="active">🎬 电影</a>
+                <a href="movies.html#tv">📺 剧集</a>
+                <a href="movies.html#show">📖 综艺</a>
             </div>
 
             <div class="nav-right">
@@ -771,7 +771,7 @@
                 <div class="movie-card" data-id="${movie.id || ''}" data-source="${movie.source || ''}">
                     <div class="movie-poster">
                         ${movie.poster ? 
-                            `<img src="https://tv.dogegg.online/api/image-proxy?url=${url}" alt="${movie.title}" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>海报加载失败</span>'">` :
+                            `<img src="/movie/proxy?url=${url}" alt="${movie.title}" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>海报加载失败</span>'">` :
                             '<span>暂无海报</span>'
                         }
                     </div>
@@ -1133,7 +1133,7 @@
                 ratingDisplay = `${rating}${count > 0 ? ` (${count > 10000 ? Math.floor(count/1000) + 'k' : count})` : ''}`;
             }
 
-            let imgurl = 'https://tv.dogegg.online/api/image-proxy?url='+ encodeURI(movie.poster);
+            let imgurl = '/movie/proxy?url='+ encodeURI(movie.poster);
 
             return `
                 <div class="movie-card" data-id="${movie.id}" data-source="${movie.source}" data-douban-id="${movie.douban_id}">

@@ -42,6 +42,8 @@ router.get('/tvbox', movieController.tvbox.bind(movieController));
  */
 router.get('/proxy', movieController.proxy.bind(movieController));
 
+router.get('/imgproxy', movieController.proxy.bind(movieController));
+
 
 export default {
   router

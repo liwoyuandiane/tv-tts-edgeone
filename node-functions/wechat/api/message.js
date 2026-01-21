@@ -23,10 +23,21 @@ export async function sendTemplateMessage(bundleId, openId, templateId, data, ur
             touser: openId,
             template_id: templateId,
             url: url,
-            data: {
+            "data": {
                 user:{value: data, color: '#173177'},
+                "first": { "value": "data", "color": "#173177" },
+                "content": {
+                    "value": data, // 这里传递你的内容变量
+                    "color": "#173177"
+                },
+                "last": {
+                    "value": data+"感谢您的使用",
+                    "color": "#173177"
+                }
             }
         };
+
+        console.log(payload)
 
         const response = await axios.post(apiUrl, payload);
         

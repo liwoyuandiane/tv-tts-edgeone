@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="refresh" content="0; url=/movie.html" />
+    <meta http-equiv="refresh" content="0; url=/movies.html" />
     <title>重定向中...</title>
     <script>
       // 作为后备，使用 JS 重定向
       (function () {
-        var target = '/movie.html' + (location.search || '') + (location.hash || '');
+        var target = '/movies.html' + (location.search || '') + (location.hash || '');
         location.replace(target);
       })();
     </script>
@@ -16,7 +16,7 @@
   <body>
     正在跳转到电影页...
     如果没有自动跳转，请点击
-    <a href="/movie.html">这里</a>。
+    <a href="/movies.html">这里</a>。
   </body>
   </html>
 
