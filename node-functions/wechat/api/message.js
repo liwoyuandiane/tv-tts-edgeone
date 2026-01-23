@@ -25,6 +25,9 @@ export async function sendTemplateMessage(bundleId, openId, templateId, data, ur
             url: url,
             "data": {
                 user:{value: data, color: '#173177'},
+                thing1:{value: data, color: '#173177'},
+                thing2: { value: data, color: '#173177' },
+
                 "first": { "value": "data", "color": "#173177" },
                 "content": {
                     "value": data, // 这里传递你的内容变量
@@ -49,6 +52,48 @@ export async function sendTemplateMessage(bundleId, openId, templateId, data, ur
         }
     } catch (error) {
         console.error(`发送模板消息错误 [${bundleId || 'default'}]:`, error);
+        throw error;
+    }
+}
+
+export async function sendSubscribeMessage(bundleId, openId, templateId, data, url = '') {
+    try {
+        const accessToken = await getAccessToken(bundleId);
+        const apiUrl = `https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=${accessToken}`;
+
+        const payload = {
+            touser: openId,
+            template_id: templateId,
+            url: url,
+            "data": {
+                user: { value: data, color: '#173177' },
+                thing1: { value: data, color: '#173177' },
+                thing2: { value: data, color: '#173177' },
+
+                "first": { "value": "data", "color": "#173177" },
+                "content": {
+                    "value": data, // 这里传递你的内容变量
+                    "color": "#173177"
+                },
+                "last": {
+                    "value": data + "感谢您的使用",
+                    "color": "#173177"
+                }
+            }
+        };
+
+        console.log(payload)
+
+        const response = await axios.post(apiUrl, payload);
+
+        if (response.data.errcode === 0) {
+            return { success: true, msgid: response.data.msgid };
+        } else {
+            console.error(`发送订阅消息失败: ${JSON.stringify(response.data)}`);
+            throw new Error(`发送订阅消息失败: ${response.data.errmsg}`);
+        }
+    } catch (error) {
+        console.error(`发送订阅消息失败 [${bundleId || 'default'}]:`, error);
         throw error;
     }
 }

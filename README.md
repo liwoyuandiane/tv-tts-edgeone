@@ -7,9 +7,40 @@
 
 [![使用 EdgeOne Pages 部署](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/pages/new?repository-url=https://github.com/arickxuan/tv-tts-edgeone)
 
+## 微信测试号推送
+ENV：
+```
+WECHAT_APPID=wx6XXX
+WECHAT_APPSECRET=6a30beXXX
+WECHAT_TOKEN=token
+WECHAT_ENCODING_AES_KEY=bizOR4aPXiXXXX
+
+```
+1. 定义模板 得到模板id
+```
+内容：{{content.DATA}}
+```
+2. 后台记录openid
+
+3. 发送模板消息
+```
+curl -X "POST" "https://xxx.com/wechat/default/notify" \
+     -H 'Content-Type: application/json; charset=utf-8' \
+     -d $'{
+  "openId": "xxx",
+  "content": "哼哼",
+  "templateId": "q_6MgfKYTuXBcaKOD5wVXyILiReH53_121AVJtfs7KI",
+  "type": "template"
+}'
+```
+
+
+
+客服平台 登录
+https://mpkf.weixin.qq.com/
 
 ## 天翼云签到
-
+ENV：
 TY_USERNAME=XXXX
 TY_PASSWORD=XXXX
 

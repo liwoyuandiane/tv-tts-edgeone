@@ -3,7 +3,7 @@ import { stringify } from 'qs';
 
 export function getAuthorizationUrl(bundleId, scope, state = '') {
     const wechatConfig = getAccountConfig(bundleId);
-    let redirect_uri = wechatConfig.redirectUri || 'https://m1.arick.top/wechat/test/recive'; //'https://m1.arick.top/bundleId/wxlogin/callback'
+    let redirect_uri = wechatConfig.redirectUri || 'https://m1.arick.top/test/wxlogin/callback'; //'https://m1.arick.top/bundleId/wxlogin/callback'
     let scopes = '';
     if (scope == 1) {
         scopes = 'snsapi_userinfo'
@@ -30,7 +30,8 @@ export function getAuthorizationUrl(bundleId, scope, state = '') {
 
 }
 
-export async function getAccessToken(code) {
+export async function getAccessToken(bundleId,code) {
+    let wechatConfig = getAccountConfig(bundleId)
     const params = {
         appid: wechatConfig.appId,
         secret: wechatConfig.appSecret,
