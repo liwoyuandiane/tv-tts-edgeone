@@ -23,6 +23,7 @@
 import express from "express";
 import cors from 'cors';
 import { main } from "./core.js";
+import { runCheckin } from "./ikuuu.js";
 const app = express();
 
 // 允许所有来源的跨域请求
@@ -37,6 +38,11 @@ app.get('/', async (req, res) => {
 
 app.get('/click', async (req, res) => {
     const result = await main();
+    res.json({ data:result });
+})
+
+app.get('/ikuuu/click', async (req, res) => {
+    const result = await runCheckin();
     res.json({ data:result });
 })
 
