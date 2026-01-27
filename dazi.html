@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>什么是双拼打字</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: white;
+            padding: 12px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .menu-icon {
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: normal;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .difficulty-select {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-content {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .text-display {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            min-height: 200px;
+        }
+
+        .pinyin-line {
+            font-size: 28px;
+            line-height: 1.8;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .hanzi-line {
+            font-size: 24px;
+            line-height: 1.8;
+            color: #666;
+            letter-spacing: 8px;
+        }
+
+        .char {
+            display: inline-block;
+            margin: 0 2px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .char.correct {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .char.corrected {
+            background: #fff9c4;
+            color: #f57f17;
+        }
+
+        .char.incorrect {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        .char.current {
+            background: #e3f2fd;
+        }
+
+        .char.current::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 12px;
+            right: 12px;
+            height: 3px;
+            background: #2196F3;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .input-line {
+            border-top: 2px solid #2196F3;
+            margin-top: 20px;
+            padding-top: 20px;
+        }
+
+        .keyboard {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+
+        .key {
+            min-width: 45px;
+            height: 45px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .key:hover {
+            background: #f5f5f5;
+        }
+
+        .key.active {
+            background: #2196F3;
+            color: white;
+            border-color: #2196F3;
+            transform: scale(0.95);
+        }
+
+        .key.special {
+            min-width: 70px;
+            font-size: 12px;
+        }
+
+        .key.space {
+            min-width: 300px;
+        }
+
+        .key-main {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .key-sub {
+            font-size: 11px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .stats {
+            position: fixed;
+            right: 30px;
+            top: 120px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-width: 120px;
+        }
+
+        .stat-item {
+            margin-bottom: 15px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .stat-unit {
+            font-size: 12px;
+            color: #999;
+        }
+
+        #hiddenInput {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="menu-icon">☰</div>
+            <div class="title">什么是双拼打字</div>
+        </div>
+        <div class="header-right">
+            <span>双拼方案：</span>
+            <select class="difficulty-select" id="difficultySelect">
+                <option value="xiaohe">小鹤双拼</option>
+                <option value="ziran">自然码</option>
+                <option value="sougou">搜狗双拼</option>
+            </select>
+            <button class="icon-btn" id="pauseBtn">⏸</button>
+            <button class="icon-btn" id="resetBtn">↻</button>
+            <button class="icon-btn">🔊</button>
+            <button class="icon-btn">拼</button>
+            <button class="icon-btn">⚙</button>
+            <button class="icon-btn">⬇</button>
+            <button class="icon-btn">👤</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="text-display">
+            <div class="pinyin-line" id="pinyinDisplay"></div>
+            <div class="hanzi-line" id="hanziDisplay"></div>
+            <div class="input-line"></div>
+        </div>
+
+        <div class="keyboard">
+            <div class="keyboard-row">
+                <div class="key"><span class="key-main">~</span><span class="key-sub">`</span></div>
+                <div class="key"><span class="key-main">!</span><span class="key-sub">1</span></div>
+                <div class="key"><span class="key-main">@</span><span class="key-sub">2</span></div>
+                <div class="key"><span class="key-main">#</span><span class="key-sub">3</span></div>
+                <div class="key"><span class="key-main">$</span><span class="key-sub">4</span></div>
+                <div class="key"><span class="key-main">%</span><span class="key-sub">5</span></div>
+                <div class="key"><span class="key-main">^</span><span class="key-sub">6</span></div>
+                <div class="key"><span class="key-main">&</span><span class="key-sub">7</span></div>
+                <div class="key"><span class="key-main">*</span><span class="key-sub">8</span></div>
+                <div class="key"><span class="key-main">(</span><span class="key-sub">9</span></div>
+                <div class="key"><span class="key-main">)</span><span class="key-sub">0</span></div>
+                <div class="key"><span class="key-main">_</span><span class="key-sub">-</span></div>
+                <div class="key"><span class="key-main">+</span><span class="key-sub">=</span></div>
+                <div class="key special">←</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="key special">Tab</div>
+                <div class="key" data-key="q"><span class="key-main">Q</span><span class="key-sub">iu</span></div>
+                <div class="key" data-key="w"><span class="key-main">W</span><span class="key-sub">ei</span></div>
+                <div class="key" data-key="e"><span class="key-main">E</span><span class="key-sub">e</span></div>
+                <div class="key" data-key="r"><span class="key-main">R</span><span class="key-sub">uan</span></div>
+                <div class="key" data-key="t"><span class="key-main">T</span><span class="key-sub">ue</span></div>
+                <div class="key" data-key="y"><span class="key-main">Y</span><span class="key-sub">un</span></div>
+                <div class="key" data-key="u"><span class="key-main">U</span><span class="key-sub">sh</span></div>
+                <div class="key" data-key="i"><span class="key-main">I</span><span class="key-sub">ch</span></div>
+                <div class="key" data-key="o"><span class="key-main">O</span><span class="key-sub">uo</span></div>
+                <div class="key" data-key="p"><span class="key-main">P</span><span class="key-sub">ie</span></div>
+                <div class="key"><span class="key-main">{</span><span class="key-sub">[</span></div>
+                <div class="key"><span class="key-main">}</span><span class="key-sub">]</span></div>
+                <div class="key"><span class="key-main">|</span><span class="key-sub">\</span></div>
+            </div>
+            <div class="keyboard-row">
+                <div class="key special">Caps Lock</div>
+                <div class="key" data-key="a"><span class="key-main">A</span><span class="key-sub">a</span></div>
+                <div class="key" data-key="s"><span class="key-main">S</span><span class="key-sub">ong</span></div>
+                <div class="key" data-key="d"><span class="key-main">D</span><span class="key-sub">ai</span></div>
+                <div class="key" data-key="f"><span class="key-main">F</span><span class="key-sub">en</span></div>
+                <div class="key" data-key="g"><span class="key-main">G</span><span class="key-sub">eng</span></div>
+                <div class="key" data-key="h"><span class="key-main">H</span><span class="key-sub">ang</span></div>
+                <div class="key" data-key="j"><span class="key-main">J</span><span class="key-sub">an</span></div>
+                <div class="key" data-key="k"><span class="key-main">K</span><span class="key-sub">ao</span></div>
+                <div class="key" data-key="l"><span class="key-main">L</span><span class="key-sub">uai</span></div>
+                <div class="key"><span class="key-main">:</span><span class="key-sub">;</span></div>
+                <div class="key"><span class="key-main">"</span><span class="key-sub">'</span></div>
+                <div class="key special">Enter</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="key special">Shift</div>
+                <div class="key" data-key="z"><span class="key-main">Z</span><span class="key-sub">ou</span></div>
+                <div class="key" data-key="x"><span class="key-main">X</span><span class="key-sub">ua</span></div>
+                <div class="key" data-key="c"><span class="key-main">C</span><span class="key-sub">ao</span></div>
+                <div class="key" data-key="v"><span class="key-main">V</span><span class="key-sub">zh</span></div>
+                <div class="key" data-key="b"><span class="key-main">B</span><span class="key-sub">in</span></div>
+                <div class="key" data-key="n"><span class="key-main">N</span><span class="key-sub">iao</span></div>
+                <div class="key" data-key="m"><span class="key-main">M</span><span class="key-sub">ian</span></div>
+                <div class="key"><span class="key-main">&lt;</span><span class="key-sub">,</span></div>
+                <div class="key"><span class="key-main">&gt;</span><span class="key-sub">.</span></div>
+                <div class="key"><span class="key-main">?</span><span class="key-sub">/</span></div>
+                <div class="key special">Shift</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="key special">Ctrl</div>
+                <div class="key special">Alt</div>
+                <div class="key space" data-key=" ">Space</div>
+                <div class="key special">Alt</div>
+                <div class="key special">Ctrl</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-item">
+            <div class="stat-label">速率</div>
+            <div class="stat-value"><span id="speed">5</span><span class="stat-unit">字/分钟</span></div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">准确性</div>
+            <div class="stat-value"><span id="accuracy">80</span><span class="stat-unit">%</span></div>
+        </div>
+    </div>
+
+    <input type="text" id="hiddenInput" autocomplete="off">
+
+    <script>
+        // 小鹤双拼方案映射
+        const shuangpinMap = {
+            // 声母
+            'sh': 'u', 'ch': 'i', 'zh': 'v',
+            // 韵母
+            'uang': 'l', 'iang': 'l', 'iong': 's', 'ong': 's',
+            'uan': 'r', 'ian': 'm', 'iao': 'n', 'ang': 'h',
+            'eng': 'g', 'ing': 'k', 'uai': 'k', 'uo': 'o',
+            'ie': 'p', 'ue': 't', 've': 't', 'ai': 'd',
+            'ei': 'w', 'ao': 'c', 'ou': 'z', 'an': 'j',
+            'en': 'f', 'in': 'b', 'un': 'y', 'iu': 'q',
+            'er': 'r', 'ua': 'x', 'ia': 'x', 'uan': 'r'
+        };
+
+        // 文本数据：全拼音 -> 双拼 -> 汉字
+        const texts = [
+            {
+                fullPinyin: ['shuang', 'pin', 'shu', 'ru', 'fa', 'shi', 'yi', 'zhong', 'han', 'zi'],
+                shuangpin: ['ul', 'pb', 'uu', 'ru', 'fa', 'ui', 'yi', 'vs', 'hj', 'zi'],
+                hanzi: ['双', '拼', '输', '入', '法', '是', '一', '种', '汉', '字']
+            },
+            {
+                fullPinyin: ['pin', 'yin', 'shu', 'ru', 'fa', 'ta', 'tong', 'guo', 'jiang', 'yi'],
+                shuangpin: ['pb', 'yb', 'uu', 'ru', 'fa', 'ta', 'ts', 'go', 'jl', 'yi'],
+                hanzi: ['拼', '音', '输', '入', '法', '它', '通', '过', '将', '一']
+            },
+            {
+                fullPinyin: ['ge', 'han', 'zi', 'pin', 'yin', 'de', 'sheng', 'mu', 'he', 'yun', 'mu'],
+                shuangpin: ['ge', 'hj', 'zi', 'pb', 'yb', 'de', 'ug', 'mu', 'he', 'yy', 'mu'],
+                hanzi: ['个', '汉', '字', '拼', '音', '的', '声', '母', '和', '韵', '母']
+            }
+        ];
+
+        let currentTextIndex = 0;
+        let currentCharIndex = 0;
+        let currentInputBuffer = '';
+        let correctChars = 0;
+        let totalChars = 0;
+        let startTime = null;
+        let isPaused = false;
+        let charStates = []; // 记录每个字符的状态：'correct', 'corrected', 'incorrect', null
+
+        const pinyinDisplay = document.getElementById('pinyinDisplay');
+        const hanziDisplay = document.getElementById('hanziDisplay');
+        const hiddenInput = document.getElementById('hiddenInput');
+        const speedDisplay = document.getElementById('speed');
+        const accuracyDisplay = document.getElementById('accuracy');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function loadText() {
+            const text = texts[currentTextIndex];
+            charStates = new Array(text.fullPinyin.length).fill(null);
+            
+            // 显示全拼音
+            pinyinDisplay.innerHTML = text.fullPinyin.map((py, i) => 
+                `<span class="char ${i === currentCharIndex ? 'current' : ''}" data-index="${i}">${py}</span>`
+            ).join(' ');
+
+            // 显示汉字
+            hanziDisplay.innerHTML = text.hanzi.map((hz, i) => 
+                `<span class="char" data-index="${i}">${hz}</span>`
+            ).join(' ');
+
+            currentCharIndex = 0;
+            currentInputBuffer = '';
+        }
+
+        function updateDisplay() {
+            const text = texts[currentTextIndex];
+            const pinyinChars = pinyinDisplay.querySelectorAll('.char');
+            
+            pinyinChars.forEach((char, i) => {
+                char.className = 'char';
+                
+                // 根据状态添加样式
+                if (charStates[i] === 'correct') {
+                    char.classList.add('correct');
+                } else if (charStates[i] === 'corrected') {
+                    char.classList.add('corrected');
+                } else if (charStates[i] === 'incorrect') {
+                    char.classList.add('incorrect');
+                }
+                
+                // 当前输入位置
+                if (i === currentCharIndex) {
+                    char.classList.add('current');
+                }
+            });
+        }
+
+        function updateStats() {
+            if (startTime && totalChars > 0) {
+                const elapsedMinutes = (Date.now() - startTime) / 60000;
+                const speed = Math.round(correctChars / elapsedMinutes) || 0;
+                const accuracy = Math.round((correctChars / totalChars) * 100) || 0;
+                
+                speedDisplay.textContent = speed;
+                accuracyDisplay.textContent = accuracy;
+            }
+        }
+
+        function highlightKey(key) {
+            const keyElement = document.querySelector(`[data-key="${key.toLowerCase()}"]`);
+            if (keyElement) {
+                keyElement.classList.add('active');
+                setTimeout(() => keyElement.classList.remove('active'), 200);
+            }
+        }
+
+        hiddenInput.addEventListener('input', (e) => {
+            if (isPaused) return;
+
+            if (!startTime) {
+                startTime = Date.now();
+            }
+
+            const inputValue = e.target.value;
+            const text = texts[currentTextIndex];
+            const expectedShuangpin = text.shuangpin[currentCharIndex];
+            
+            // 获取新输入的字符
+            const newChar = inputValue[inputValue.length - 1];
+            if (newChar) {
+                currentInputBuffer += newChar;
+                highlightKey(newChar);
+            }
+
+            // 检查是否完成当前字的输入
+            if (currentInputBuffer.length === expectedShuangpin.length) {
+                totalChars++;
+                
+                if (currentInputBuffer === expectedShuangpin) {
+                    // 输入正确
+                    if (charStates[currentCharIndex] === 'incorrect') {
+                        // 之前错误，现在改对了
+                        charStates[currentCharIndex] = 'corrected';
+                    } else {
+                        // 第一次就正确
+                        charStates[currentCharIndex] = 'correct';
+                    }
+                    correctChars++;
+                    currentCharIndex++;
+                    
+                    if (currentCharIndex >= text.shuangpin.length) {
+                        currentTextIndex = (currentTextIndex + 1) % texts.length;
+                        loadText();
+                    } else {
+                        updateDisplay();
+                    }
+                } else {
+                    // 输入错误
+                    charStates[currentCharIndex] = 'incorrect';
+                    updateDisplay();
+                }
+                
+                currentInputBuffer = '';
+                updateStats();
+                e.target.value = '';
+            }
+        });
+
+        // 处理退格键
+        hiddenInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && currentInputBuffer.length > 0) {
+                e.preventDefault();
+                currentInputBuffer = currentInputBuffer.slice(0, -1);
+                hiddenInput.value = '';
+            } else if (e.key === 'Backspace' && currentInputBuffer.length === 0 && currentCharIndex > 0) {
+                // 回退到上一个字符
+                e.preventDefault();
+                currentCharIndex--;
+                charStates[currentCharIndex] = null;
+                updateDisplay();
+                hiddenInput.value = '';
+            }
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? '▶' : '⏸';
+            if (!isPaused) {
+                hiddenInput.focus();
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            currentTextIndex = 0;
+            currentCharIndex = 0;
+            currentInputBuffer = '';
+            correctChars = 0;
+            totalChars = 0;
+            startTime = null;
+            isPaused = false;
+            charStates = [];
+            pauseBtn.textContent = '⏸';
+            speedDisplay.textContent = '0';
+            accuracyDisplay.textContent = '100';
+            loadText();
+            hiddenInput.value = '';
+            hiddenInput.focus();
+        });
+
+        document.addEventListener('click', () => {
+            if (!isPaused) {
+                hiddenInput.focus();
+            }
+        });
+
+        loadText();
+        hiddenInput.focus();
+    </script>
+</body>
+</html>

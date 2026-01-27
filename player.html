@@ -673,10 +673,10 @@
             <a href="#" class="logo">KatelyaTV</a>
 
             <div class="nav-links">
-                <a href="movie.html">🏠 首页</a>
-                <a href="movie.html#movie">🎬 电影</a>
-                <a href="movie.html#tv">📺 剧集</a>
-                <a href="movie.html#show">📖 综艺</a>
+                <a href="movies.html">🏠 首页</a>
+                <a href="movies.html#movie">🎬 电影</a>
+                <a href="movies.html#tv">📺 剧集</a>
+                <a href="movies.html#show">📖 综艺</a>
             </div>
 
             <div class="nav-right">
@@ -768,6 +768,11 @@
                 <div>支持1080P高清画质</div>
             </div>
         </aside>
+    </div>
+
+    <div class="footer">    
+        <p>Copyright © 2025 KatelyaTV. All rights reserved.</p>
+        <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js?id=JpbG6sQCoIwI4LMM&ck=JpbG6sQCoIwI4LMM"></script>
     </div>
 
     <script>
@@ -1130,8 +1135,71 @@
 
         // 显示快捷键提示
         function showShortcutHint(text, position = 'center') {
-            // 简单的控制台日志，您可以根据需要实现UI提示
             console.log(`快捷键提示: ${text}`);
+            
+            // 创建或获取提示元素
+            let hintElement = document.getElementById('shortcut-hint');
+            if (!hintElement) {
+                hintElement = document.createElement('div');
+                hintElement.id = 'shortcut-hint';
+                hintElement.style.cssText = `
+                    position: fixed;
+                    z-index: 9999;
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    pointer-events: none;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                    white-space: nowrap;
+                `;
+                document.body.appendChild(hintElement);
+            }
+            
+            // 设置提示文本
+            hintElement.textContent = text;
+            
+            // 根据位置设置样式
+            switch (position) {
+                case 'left':
+                    hintElement.style.left = '20px';
+                    hintElement.style.top = '50%';
+                    hintElement.style.transform = 'translateY(-50%)';
+                    hintElement.style.right = 'auto';
+                    hintElement.style.bottom = 'auto';
+                    break;
+                case 'right':
+                    hintElement.style.right = '20px';
+                    hintElement.style.top = '50%';
+                    hintElement.style.transform = 'translateY(-50%)';
+                    hintElement.style.left = 'auto';
+                    hintElement.style.bottom = 'auto';
+                    break;
+                case 'center':
+                default:
+                    hintElement.style.left = '50%';
+                    hintElement.style.top = '50%';
+                    hintElement.style.transform = 'translate(-50%, -50%)';
+                    hintElement.style.right = 'auto';
+                    hintElement.style.bottom = 'auto';
+                    break;
+            }
+            
+            // 显示提示
+            hintElement.style.opacity = '1';
+            
+            // 清除之前的定时器
+            if (window.hintTimer) {
+                clearTimeout(window.hintTimer);
+            }
+            
+            // 1.5秒后隐藏提示
+            window.hintTimer = setTimeout(() => {
+                hintElement.style.opacity = '0';
+            }, 1500);
         }
 
         // 清除视频播放进度
@@ -1202,6 +1270,9 @@
                 art.destroy();
                 art = null;
             }
+            
+            // 清理键盘事件监听器
+            document.removeEventListener('keydown', handleKeyboardEvent);
 
             // 配置HLS.js选项
             const CustomLoader = adFilteringEnabled ? createCustomHlsJsLoader() : null;
@@ -1514,6 +1585,9 @@
             // 添加移动端长按三倍速播放功能
             setupLongPressSpeedControl();
 
+            // 添加键盘快捷键支持
+            setupKeyboardControls();
+
             // 视频播放结束事件
             art.on('video:ended', function () {
                 videoHasEnded = true;
@@ -1560,6 +1634,90 @@
         `;
                 }
             }, 10000);
+        }
+
+        // 全局键盘事件处理函数
+        function handleKeyboardEvent(e) {
+            // 检查是否在输入框中，如果是则不处理快捷键
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            // 检查播放器是否存在且视频已加载
+            if (!art || !art.video || art.video.duration === 0) {
+                return;
+            }
+            
+            switch (e.key) {
+                case 'ArrowLeft':
+                    // 左方向键：后退5秒
+                    e.preventDefault();
+                    const newTimeLeft = Math.max(0, art.video.currentTime - 5);
+                    art.currentTime = newTimeLeft;
+                    showShortcutHint('后退 5 秒', 'left');
+                    break;
+                    
+                case 'ArrowRight':
+                    // 右方向键：快进5秒
+                    e.preventDefault();
+                    const newTimeRight = Math.min(art.video.duration - 1, art.video.currentTime + 5);
+                    art.currentTime = newTimeRight;
+                    showShortcutHint('快进 5 秒', 'right');
+                    break;
+                    
+                case 'ArrowUp':
+                    // 上方向键：音量增加10%
+                    e.preventDefault();
+                    const newVolumeUp = Math.min(1, art.volume + 0.1);
+                    art.volume = newVolumeUp;
+                    showShortcutHint(`音量 ${Math.round(newVolumeUp * 100)}%`, 'center');
+                    break;
+                    
+                case 'ArrowDown':
+                    // 下方向键：音量减少10%
+                    e.preventDefault();
+                    const newVolumeDown = Math.max(0, art.volume - 0.1);
+                    art.volume = newVolumeDown;
+                    showShortcutHint(`音量 ${Math.round(newVolumeDown * 100)}%`, 'center');
+                    break;
+                    
+                case ' ':
+                    // 空格键：播放/暂停
+                    e.preventDefault();
+                    if (art.video.paused) {
+                        art.play();
+                        showShortcutHint('播放', 'center');
+                    } else {
+                        art.pause();
+                        showShortcutHint('暂停', 'center');
+                    }
+                    break;
+                    
+                case 'f':
+                case 'F':
+                    // F键：全屏切换
+                    e.preventDefault();
+                    art.fullscreen = !art.fullscreen;
+                    showShortcutHint(art.fullscreen ? '进入全屏' : '退出全屏', 'center');
+                    break;
+                    
+                case 'm':
+                case 'M':
+                    // M键：静音切换
+                    e.preventDefault();
+                    art.muted = !art.muted;
+                    showShortcutHint(art.muted ? '静音' : '取消静音', 'center');
+                    break;
+            }
+        }
+
+        // 设置键盘快捷键控制
+        function setupKeyboardControls() {
+            // 移除可能存在的旧事件监听器
+            document.removeEventListener('keydown', handleKeyboardEvent);
+            
+            // 添加键盘事件监听器
+            document.addEventListener('keydown', handleKeyboardEvent);
         }
 
         // 设置移动端长按三倍速播放功能
@@ -1720,7 +1878,7 @@
                 e.stopPropagation();
 
                 // 直接设置视频时间
-                art.seek(clickTime);
+                art.currentTime = clickTime;
             }
 
             // 处理移动端触摸事件
@@ -1743,7 +1901,7 @@
                 userClickedPosition = clickTime;
 
                 e.stopPropagation();
-                art.seek(clickTime);
+                art.currentTime = clickTime;
             }
         }
 

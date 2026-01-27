@@ -1,3 +1,5 @@
+
+import axios from 'axios';
 import { getCacheTime, getAvailableApiSites, searchFromApi, getDetailFromApi, getConfig } from '../core/movie.js';
 import { getRecentHotMovies } from '../core/douban.js';
 import { detectPlatform,getCompatibleParsers,PARSE_APIS } from '../core/utils/parse.js';
@@ -60,10 +62,14 @@ class MovieController {
 
             // 获取缓存时间并设置响应头
             const cacheTime = await getCacheTime();
-
-            return res.json(result, {
-                headers: this._getCacheHeaders(cacheTime)
+            const cacheHeaders = this._getCacheHeaders(cacheTime);
+            
+            // 设置响应头
+            Object.entries(cacheHeaders).forEach(([key, value]) => {
+                res.setHeader(key, value);
             });
+
+            return res.json(result);
 
         } catch (error) {
             console.error('获取豆瓣电影列表失败:', error);
@@ -95,29 +101,32 @@ class MovieController {
         // 如果没有查询参数，返回空结果
         if (!query) {
             const cacheTime = await getCacheTime();
-            return res.json(
-                { results: [] },
-                {
-                    headers: this._getCacheHeaders(cacheTime),
-                }
-            );
+            const cacheHeaders = this._getCacheHeaders(cacheTime);
+            
+            // 设置响应头
+            Object.entries(cacheHeaders).forEach(([key, value]) => {
+                res.setHeader(key, value);
+            });
+            
+            return res.json({ results: [] });
         }
 
         try {
-            // 获取可用的API站点并并行搜索
-            const apiSites = await getAvailableApiSites();
+            // 获取可用的API站点并并行搜索（随机选取5个）
+            const apiSites = await getAvailableApiSites(false, 15);
             const searchPromises = apiSites.map(site => searchFromApi(site, query));
 
             const results = await Promise.all(searchPromises);
             const flattenedResults = results.flat();
             const cacheTime = await getCacheTime();
+            const cacheHeaders = this._getCacheHeaders(cacheTime);
+            
+            // 设置响应头
+            Object.entries(cacheHeaders).forEach(([key, value]) => {
+                res.setHeader(key, value);
+            });
 
-            return res.json(
-                { results: flattenedResults },
-                {
-                    headers: this._getCacheHeaders(cacheTime),
-                }
-            );
+            return res.json({ results: flattenedResults });
         } catch (error) {
             console.error('电影搜索失败:', error);
             return res.status(500).json({ error: '搜索失败' });
@@ -142,8 +151,8 @@ class MovieController {
         }
 
         try {
-            // 查找对应的API站点
-            const apiSites = await getAvailableApiSites();
+            // 查找对应的API站点（不进行随机选择）
+            const apiSites = await getAvailableApiSites(false, 0);
             const apiSite = apiSites.find(site => site.key === source);
 
             if (!apiSite) {
@@ -153,10 +162,14 @@ class MovieController {
             // 获取详情数据
             const result = await getDetailFromApi(apiSite, id);
             const cacheTime = await getCacheTime();
-
-            return res.json(result, {
-                headers: this._getCacheHeaders(cacheTime),
+            const cacheHeaders = this._getCacheHeaders(cacheTime);
+            
+            // 设置响应头
+            Object.entries(cacheHeaders).forEach(([key, value]) => {
+                res.setHeader(key, value);
             });
+
+            return res.json(result);
         } catch (error) {
             console.error('获取电影详情失败:', error);
             return res.status(500).json({ error: error.message || '获取详情失败' });
@@ -204,7 +217,7 @@ class MovieController {
                 quickSearch: 1, // 支持快速搜索
                 filterable: 1, // 支持分类筛选
                 ext: source.detail || '', // 详情页地址作为扩展参数
-                timeout: 30, // 30秒超时
+                timeout: 60, // 30秒超时
                 categories: [
                     "电影", "电视剧", "综艺", "动漫", "纪录片", "短剧"
                 ]
@@ -435,7 +448,180 @@ class MovieController {
         }
 
     }
+
+    /**
+     * 图片代理接口 - 用于绕过豆瓣等网站的防盗链
+     * @param {Object} req - Express 请求对象
+     * @param {Object} res - Express 响应对象
+     */
+    async proxy(req, res) {
+        try {
+            const { url } = req.query;
+
+            console.log(url);
+
+            // 发起请求获取图片
+            const response = await fetch(url, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Referer': 'https://movie.douban.com/',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                },
+                timeout: 10000 // 10秒超时
+            });
+
+            console.log(response)
+
+            if (!response.ok) {
+                return res.status(response.status).json({ 
+                    error: '获取图片失败',
+                    status: response.status 
+                });
+            }
+
+            // 获取图片数据
+            const imageBuffer = await response.arrayBuffer();
+            const contentType = response.headers.get('content-type') || 'image/jpeg';
+
+            // 设置响应头
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400'); // 缓存1天
+            res.setHeader('CDN-Cache-Control', 'public, s-maxage=86400');
+            res.setHeader('Vercel-CDN-Cache-Control', 'public, s-maxage=86400');
+            
+            // 允许跨域
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+            // 返回图片数据
+            return res.send(Buffer.from(imageBuffer));
+
+        } catch (error) {
+            console.error('图片代理失败:', error);
+            
+            // 根据错误类型返回不同的状态码
+            if (error.name === 'AbortError' || error.code === 'ETIMEDOUT') {
+                return res.status(504).json({ error: '请求超时' });
+            } else if (error.code === 'ENOTFOUND') {
+                return res.status(404).json({ error: '目标地址不存在' });
+            } else {
+                return res.status(500).json({ 
+                    error: '代理失败',
+                    message: error.message 
+                });
+            }
+        }
+    }
+
+
+    async imgproxy(req, res)  {
+        const imageUrl = req.query.url;
+
+        if (!imageUrl) {
+            return res.status(400).json({ error: 'Missing image URL' });
+        }
+
+        try {
+            const imageResponse = await axios({
+                method: 'GET',
+                url: imageUrl,
+                responseType: 'stream',
+                headers: {
+                    'User-Agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                    Accept: 'image/jpeg,image/png,image/gif,*/*;q=0.8',
+                    Referer: 'https://movie.douban.com/',
+                },
+                timeout: 10000,
+                maxRedirects: 5, // 最大重定向次数
+                validateStatus: (status) => {
+                    // 接受所有状态码，不自动抛出错误
+                    return true;
+                },
+            });
+
+            // 处理非 200 状态码
+            if (imageResponse.status !== 200) {
+                return res.status(imageResponse.status).json({
+                    error: `Image server returned ${imageResponse.status}`,
+                    status: imageResponse.status,
+                    statusText: imageResponse.statusText,
+                });
+            }
+
+            const contentType = imageResponse.headers['content-type'];
+            const contentLength = imageResponse.headers['content-length'];
+
+            // 验证是否为图片类型
+            if (contentType && !contentType.startsWith('image/')) {
+                return res.status(415).json({
+                    error: 'URL does not point to an image',
+                    contentType,
+                });
+            }
+
+            // 设置响应头
+            const headers = {
+                'Cache-Control': 'public, max-age=15720000, s-maxage=15720000',
+                'CDN-Cache-Control': 'public, s-maxage=15720000',
+            };
+
+            if (contentType) {
+                headers['Content-Type'] = contentType;
+            }
+
+            if (contentLength) {
+                headers['Content-Length'] = contentLength;
+            }
+
+            res.set(headers);
+
+            // 流式传输
+            imageResponse.data.pipe(res);
+
+            // 错误处理
+            imageResponse.data.on('error', (error) => {
+                console.error('Stream error:', error);
+                if (!res.headersSent) {
+                    res.status(500).json({ error: 'Error streaming image' });
+                }
+            });
+
+            // 完成处理
+            imageResponse.data.on('end', () => {
+                // 流传输完成
+            });
+
+        } catch (error) {
+            console.error('Axios error:', error.message);
+
+            // 处理不同的错误情况
+            if (error.code === 'ENOTFOUND') {
+                return res.status(404).json({
+                    error: 'Image host not found'
+                });
+            } else if (error.code === 'ECONNREFUSED') {
+                return res.status(503).json({
+                    error: 'Image server connection refused'
+                });
+            } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+                return res.status(504).json({
+                    error: 'Image request timeout'
+                });
+            } else {
+                return res.status(500).json({
+                    error: 'Internal server error while fetching image'
+                });
+            }
+        }
+    };
+
+
+    
 }
+
 
 export default MovieController;
 
